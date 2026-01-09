@@ -5,9 +5,10 @@ const Produit = require('../models/Produit');
 const router = express.Router();
 
 // POST /produits
-// Crée un produit simple à partir du body
 router.post('/', async (req, res) => {
   try {
+    console.log('Body reçu :', req.body); // <-- ajout
+
     const {
       titre,
       asin,
@@ -18,7 +19,7 @@ router.post('/', async (req, res) => {
       prix_plus_bas,
       prix_plus_haut,
       devise,
-    } = req.body;
+    } = req.body || {};
 
     const produit = await Produit.create({
       titre,

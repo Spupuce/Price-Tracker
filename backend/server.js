@@ -9,7 +9,7 @@ const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // <= IMPORTANT, avant les routes
 
 // Routes
 app.use('/produits', produitsRoutes);
