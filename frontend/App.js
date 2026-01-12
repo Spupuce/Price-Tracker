@@ -1,5 +1,5 @@
 // frontend/App.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,29 +8,29 @@ import {
   StyleSheet,
   Platform,
   TouchableOpacity,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+} from "react-native";
+import Constants from 'expo-constants';
+import { SafeAreaView } from "react-native-safe-area-context";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-const LOCAL_IP = '10.212.126.196';
+// const LOCAL_IP = '10.212.126.196';
+const API_URL = Constants.expoConfig.extra.EXPO_PUBLIC_API_URL;
+console.log('API_URL =', API_URL);
 
-const API_URL =
-  Platform.OS === 'android'
-    ? `http://${LOCAL_IP}:4000`
-    : 'http://localhost:4000';
 
 const Stack = createNativeStackNavigator();
 
 // ------- Utilitaires UI -------
 
 const formatPrix = (valeur, devise) => {
-  if (typeof valeur !== 'number') return '-';
-  return `${valeur.toFixed(2)} ${devise || ''}`.trim();
+  if (typeof valeur !== "number") return "-";
+  return `${valeur.toFixed(2)} ${devise || ""}`.trim();
 };
 
 const calculerRemise = (prixInitial, prixActuel) => {
-  if (typeof prixInitial !== 'number' || typeof prixActuel !== 'number') return null;
+  if (typeof prixInitial !== "number" || typeof prixActuel !== "number")
+    return null;
   const diff = prixInitial - prixActuel;
   if (diff <= 0) return null;
   const pourcentage = (diff / prixInitial) * 100;
@@ -46,22 +46,22 @@ function ListeProduitsScreen({ navigation }) {
 
   const chargerProduits = async () => {
     try {
-      console.log('Appel API vers :', `${API_URL}/produits`);
+      console.log("Appel API vers :", `${API_URL}/produits`);
       setChargement(true);
       setErreur(null);
 
       const response = await fetch(`${API_URL}/produits`);
-      console.log('Status réponse :', response.status);
+      console.log("Status réponse :", response.status);
 
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement des produits');
+        throw new Error("Erreur lors du chargement des produits");
       }
 
       const data = await response.json();
-      console.log('Données reçues :', data);
+      console.log("Données reçues :", data);
       setProduits(data);
     } catch (e) {
-      console.error('Erreur fetch :', e);
+      console.error("Erreur fetch :", e);
       setErreur(e.message);
     } finally {
       setChargement(false);
@@ -77,7 +77,9 @@ function ListeProduitsScreen({ navigation }) {
 
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate('DetailProduit', { produitId: item._id })}
+        onPress={() =>
+          navigation.navigate("DetailProduit", { produitId: item._id })
+        }
         activeOpacity={0.8}
       >
         <View style={styles.card}>
@@ -149,13 +151,13 @@ function DetailProduitScreen({ route }) {
 
       const response = await fetch(`${API_URL}/produits/${produitId}`);
       if (!response.ok) {
-        throw new Error('Erreur lors du chargement du produit');
+        throw new Error("Erreur lors du chargement du produit");
       }
 
       const data = await response.json();
       setProduit(data);
     } catch (e) {
-      console.error('Erreur fetch détail :', e);
+      console.error("Erreur fetch détail :", e);
       setErreur(e.message);
     } finally {
       setChargement(false);
@@ -179,7 +181,7 @@ function DetailProduitScreen({ route }) {
   if (erreur || !produit) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.erreur}>{erreur || 'Produit introuvable'}</Text>
+        <Text style={styles.erreur}>{erreur || "Produit introuvable"}</Text>
       </SafeAreaView>
     );
   }
@@ -230,7 +232,7 @@ const navTheme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    background: '#ffffff',
+    background: "#ffffff",
   },
 };
 
@@ -241,12 +243,12 @@ export default function App() {
         <Stack.Screen
           name="ListeProduits"
           component={ListeProduitsScreen}
-          options={{ title: 'PriceTracker' }}
+          options={{ title: "PriceTracker" }}
         />
         <Stack.Screen
           name="DetailProduit"
           component={DetailProduitScreen}
-          options={{ title: 'Détail du produit' }}
+          options={{ title: "Détail du produit" }}
         />
       </Stack.Navigator>
     </NavigationContainer>
@@ -260,42 +262,42 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
     paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
   },
   header: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 16,
   },
   liste: {
     paddingBottom: 16,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 16,
     padding: 12,
     marginBottom: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 2,
   },
   cardContent: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   imagePlaceholder: {
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: "#e5e7eb",
     marginRight: 12,
   },
   imagePlaceholderLarge: {
     width: 120,
     height: 120,
     borderRadius: 16,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: "#e5e7eb",
     marginRight: 12,
   },
   cardText: {
@@ -303,45 +305,45 @@ const styles = StyleSheet.create({
   },
   titre: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 8,
-    color: '#111827',
+    color: "#111827",
   },
   prixRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     marginBottom: 4,
   },
   prixActuel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#059669',
+    fontWeight: "600",
+    color: "#059669",
     marginRight: 8,
   },
   prixInitial: {
     fontSize: 14,
-    color: '#9ca3af',
-    textDecorationLine: 'line-through',
+    color: "#9ca3af",
+    textDecorationLine: "line-through",
   },
   asin: {
     fontSize: 12,
-    color: '#6b7280',
+    color: "#6b7280",
   },
   badgePromo: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: '#16a34a',
+    backgroundColor: "#16a34a",
     marginBottom: 4,
   },
   badgePromoTexte: {
-    color: '#ffffff',
+    color: "#ffffff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   erreur: {
-    color: '#b91c1c',
+    color: "#b91c1c",
     marginTop: 8,
   },
 });
