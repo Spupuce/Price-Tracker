@@ -31,89 +31,42 @@ const extraireASIN = (url) => {
 };
 
 /**
- * Génère des données fictives pour le développement
- * @param {string} asin - ASIN du produit
- * @param {string} url - URL du produit
- * @returns {Object} - Données fictives
- */
-// backend/services/amazonScraper.js
-// Trouve la fonction genererDonneesFictives() et remplace les URLs d'images
-
-const genererDonneesFictives = (asin, url) => {
-  // Liste de produits fictifs pour le développement
-  const produitsFictifs = {
-    'B08N5WRWNW': {
-      titre: 'Sony WH-1000XM5 Casque Bluetooth à Réduction de Bruit - Noir',
-      image: 'https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=500',
-      prix_actuel: 329.99,
-    },
-    'B0BDJ7RXQM': {
-      titre: 'Apple MacBook Pro 14" M3 Pro, 18 Go RAM, 512 Go SSD - Gris sidéral',
-      image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=500',
-      prix_actuel: 2199.99,
-    },
-    'B0C1J9NWQD': {
-      titre: 'Samsung Galaxy S24 Ultra 5G - 256 Go, 12 Go RAM - Titanium Black',
-      image: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500',
-      prix_actuel: 1199.99,
-    },
-  };
-
-  // Si l'ASIN est connu, utiliser les données fictives
-  if (produitsFictifs[asin]) {
-    console.log('📦 Utilisation de données fictives pour le développement (ASIN:', asin + ')');
-    return {
-      asin,
-      titre: produitsFictifs[asin].titre,
-      image: produitsFictifs[asin].image,
-      prix_actuel: produitsFictifs[asin].prix_actuel,
-      devise: '€',
-      url_produit: url,
-    };
-  }
-
-  // Sinon, générer des données aléatoires
-  console.log('📦 Génération de données fictives aléatoires (ASIN:', asin + ')');
-  const prixAleatoire = (Math.random() * 500 + 50).toFixed(2);
-  
-  return {
-    asin,
-    titre: `Produit Amazon ${asin}`,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500', // Image produit générique
-    prix_actuel: parseFloat(prixAleatoire),
-    devise: '€',
-    url_produit: url,
-  };
-};
-
-
-/**
  * Scrape les informations d'un produit Amazon
- * @param {string} url - URL du produit Amazon
+ * @param {string} url - URL du produit Amazon OU ASIN seul
  * @returns {Object} - Informations du produit
  */
-const scraperProduitAmazon = async (url) => {
+const scraperProduitAmazon = async (urlOuAsin) => {
   try {
-    console.log('Scraping de l\'URL:', url);
+    console.log("Scraping demandé pour :", urlOuAsin);
 
-    // Extraire l'ASIN
-    const asin = extraireASIN(url);
-    if (!asin) {
-      throw new Error('ASIN introuvable dans l\'URL');
+    let asin = null;
+    let urlPropre = '';
+
+    // Si on reçoit directement un ASIN
+    if (/^[A-Z0-9]{10}$/.test(urlOuAsin)) {
+      asin = urlOuAsin;
+      urlPropre = `https://www.amazon.fr/dp/${asin}`;
+    } else {
+      // Sinon on considère que c'est une URL
+      asin = extraireASIN(urlOuAsin);
+      if (!asin) {
+        throw new Error('ASIN introuvable dans l’URL');
+      }
+      urlPropre = `https://www.amazon.fr/dp/${asin}`;
     }
 
-    // Reconstruire une URL propre
-    const urlPropre = `https://www.amazon.fr/dp/${asin}`;
-    console.log('URL nettoyée:', urlPropre);
+    console.log('ASIN détecté :', asin);
+    console.log('URL nettoyée :', urlPropre);
 
-    // Configuration des headers
     const headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept:
+        'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
       'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
       'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Connection': 'keep-alive',
+      DNT: '1',
+      Connection: 'keep-alive',
       'Upgrade-Insecure-Requests': '1',
       'Sec-Fetch-Dest': 'document',
       'Sec-Fetch-Mode': 'navigate',
@@ -122,42 +75,32 @@ const scraperProduitAmazon = async (url) => {
       'Cache-Control': 'max-age=0',
     };
 
-    let html = '';
-    try {
-      // Tenter le scraping réel
-      const response = await axios.get(urlPropre, { 
-        headers,
-        timeout: 15000,
-        maxRedirects: 5,
-      });
+    const response = await axios.get(urlPropre, {
+      headers,
+      timeout: 15000,
+      maxRedirects: 5,
+    });
 
-      html = response.data;
-      console.log('Longueur HTML récupéré:', html.length, 'caractères');
-    } catch (error) {
-      console.warn('⚠️ Échec du scraping Amazon:', error.message);
-      console.log('→ Basculement sur données fictives');
-      return genererDonneesFictives(asin, urlPropre);
-    }
+    const html = response.data;
+    console.log('Longueur HTML récupéré :', html.length, 'caractères');
 
-    // Si la page est trop petite, c'est probablement un blocage
-    if (html.length < 10000) {
-      console.warn('⚠️ Page Amazon trop petite, probable blocage');
-      console.log('→ Basculement sur données fictives');
-      return genererDonneesFictives(asin, urlPropre);
+    if (!html || html.length < 10000) {
+      console.warn('Page Amazon trop petite ou vide : probable blocage/captcha');
+      throw new Error('Page Amazon non exploitable (blocage ou captcha)');
     }
 
     const $ = cheerio.load(html);
 
-    // Extraire le titre
-    let titre = 
+    // Titre
+    let titre =
       $('#productTitle').text().trim() ||
       $('h1#title').text().trim() ||
       $('h1.a-size-large').text().trim() ||
       $('#title_feature_div h1').text().trim() ||
       '';
 
-    // Extraire l'image
-    let image = 
+    // Image
+    let image =
       $('#landingImage').attr('data-old-hires') ||
       $('#landingImage').attr('src') ||
       $('#imgBlkFront').attr('data-a-dynamic-image') ||
@@ -167,7 +110,6 @@ const scraperProduitAmazon = async (url) => {
       $('img#main-image').attr('src') ||
       null;
 
-    // Parser JSON si nécessaire
     if (image && image.startsWith('{')) {
       try {
         const imageObj = JSON.parse(image);
@@ -176,11 +118,11 @@ const scraperProduitAmazon = async (url) => {
           image = urls[0];
         }
       } catch (e) {
-        // Ignorer l'erreur
+        // ignore
       }
     }
 
-    // Extraire le prix
+    // Prix
     let prixActuel = null;
     let devise = '€';
 
@@ -205,9 +147,9 @@ const scraperProduitAmazon = async (url) => {
     if (prixTexte) {
       const prixNettoyé = prixTexte
         .replace(/\s/g, '')
-        .replace(/[^\d,.-]/g, '')
+        .replace(/[^\d,.,-]/g, '')
         .replace(',', '.');
-      
+
       prixActuel = parseFloat(prixNettoyé);
 
       if (prixTexte.includes('€')) devise = '€';
@@ -216,26 +158,29 @@ const scraperProduitAmazon = async (url) => {
       else if (prixTexte.includes('EUR')) devise = '€';
     }
 
-    // Si aucune donnée significative, utiliser les données fictives
-    if (!titre && !prixActuel) {
-      console.warn('❌ Aucune donnée significative extraite');
-      console.log('→ Basculement sur données fictives');
-      return genererDonneesFictives(asin, urlPropre);
+    if (!titre || !prixActuel) {
+      console.warn(
+        'Données insuffisantes extraites (titre ou prix manquant) :',
+        { titreOK: !!titre, prixOK: !!prixActuel }
+      );
+      throw new Error('Impossible d’extraire les informations du produit');
     }
 
-    console.log('✅ Scraping réussi');
+    console.log('✅ Scraping réussi pour', asin);
+
     return {
       asin,
-      titre: titre || 'Titre non disponible',
+      titre,
       image: image || null,
       prix_actuel: prixActuel,
       devise,
       url_produit: urlPropre,
     };
-
   } catch (error) {
     console.error('❌ Erreur lors du scraping:', error.message);
-    throw new Error(`Impossible de récupérer les informations du produit: ${error.message}`);
+    throw new Error(
+      `Impossible de récupérer les informations du produit: ${error.message}`
+    );
   }
 };
 

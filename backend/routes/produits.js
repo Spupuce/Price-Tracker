@@ -8,27 +8,43 @@ const { mettreAJourProduit, mettreAJourTousLesProduits } = require('../services/
 
 /**
  * POST /produits - Ajouter un nouveau produit à suivre
+ * Accepte soit :
+ *  - { url_produit: "https://www.amazon.fr/..." }
+ *  - { asin: "B07M8R2L46" }
  */
 router.post('/', async (req, res) => {
   try {
-    const { url_produit } = req.body;
+    const { url_produit, asin } = req.body;
 
-    if (!url_produit) {
+    if (!url_produit && !asin) {
       return res.status(400).json({
-        erreur: 'L\'URL du produit est requise',
+        erreur: 'Une URL Amazon ou un ASIN est requis',
       });
     }
 
-    if (!url_produit.includes('amazon.')) {
+    let urlPourScraping = url_produit || '';
+
+    // Si on reçoit un ASIN sans URL, on construit l’URL standard
+    if (!urlPourScraping && asin) {
+      urlPourScraping = `https://www.amazon.fr/dp/${asin}`;
+    }
+
+    if (!urlPourScraping.includes('amazon.')) {
       return res.status(400).json({
-        erreur: 'L\'URL doit être une URL Amazon valide',
+        erreur: 'L’URL doit être une URL Amazon valide',
       });
     }
 
-    console.log('Ajout d\'un nouveau produit:', url_produit);
+    console.log('Ajout d’un nouveau produit (URL ou ASIN) :', {
+      url_produit: url_produit || null,
+      asin: asin || null,
+      urlPourScraping,
+    });
 
-    const infosScrapees = await scraperProduitAmazon(url_produit);
+    // Récupération des infos via le scraper (réel uniquement)
+    const infosScrapees = await scraperProduitAmazon(urlPourScraping);
 
+    // Vérifier si le produit existe déjà par ASIN
     const produitExistant = await Produit.findOne({ asin: infosScrapees.asin });
     if (produitExistant) {
       return res.status(409).json({
@@ -36,6 +52,8 @@ router.post('/', async (req, res) => {
         produit: produitExistant,
       });
     }
+
+    const maintenant = new Date();
 
     const nouveauProduit = new Produit({
       titre: infosScrapees.titre,
@@ -49,7 +67,7 @@ router.post('/', async (req, res) => {
       devise: infosScrapees.devise,
       en_promo: false,
       variation_prix: 0,
-      derniere_mise_a_jour: new Date(),
+      derniere_mise_a_jour: maintenant,
     });
 
     const produitSauvegarde = await nouveauProduit.save();
@@ -61,17 +79,17 @@ router.post('/', async (req, res) => {
         prix: produitSauvegarde.prix_actuel,
         devise: produitSauvegarde.devise,
         source: 'creation',
-        date_releve: new Date(),
+        date_releve: maintenant,
       });
     }
 
-    console.log('Produit ajouté avec succès:', produitSauvegarde._id);
+    console.log('Produit ajouté avec succès :', produitSauvegarde._id);
 
     res.status(201).json(produitSauvegarde);
   } catch (error) {
-    console.error('Erreur lors de l\'ajout du produit:', error);
+    console.error("Erreur lors de l’ajout du produit:", error);
     res.status(500).json({
-      erreur: 'Erreur lors de l\'ajout du produit',
+      erreur: "Erreur lors de l’ajout du produit",
       details: error.message,
     });
   }
@@ -127,7 +145,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    console.log('Produit supprimé:', req.params.id);
+    console.log('Produit supprimé :', req.params.id);
     res.json({
       message: 'Produit supprimé avec succès',
       produit,
@@ -239,9 +257,9 @@ router.get('/:id/historique', async (req, res) => {
       historique,
     });
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'historique:', error);
+    console.error("Erreur lors de la récupération de l'historique:", error);
     res.status(500).json({
-      erreur: 'Erreur lors de la récupération de l\'historique des prix',
+      erreur: "Erreur lors de la récupération de l'historique des prix",
       details: error.message,
     });
   }
